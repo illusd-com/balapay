@@ -1,60 +1,58 @@
-import { createClient } from "@libsql/client";
+import { createClient, type Client } from "@libsql/client";
 
-export function getTurso() {
+let _client: Client | null | undefined;
+
+/**
+ * Singleton Turso client. Returns null only when env vars are missing.
+ */
+export function getTurso(): Client | null {
+  if (_client !== undefined) return _client;
+
   const url = process.env.TURSO_DATABASE_URL;
   const authToken = process.env.TURSO_AUTH_TOKEN;
 
   if (!url || !authToken) {
-    console.warn("Turso credentials missing – using mock mode");
+    console.warn("[balapay] Turso credentials missing – demo mode");
+    _client = null;
     return null;
   }
 
-  return createClient({
-    url,
-    authToken,
-  });
+  _client = createClient({ url, authToken });
+  return _client;
 }
 
 export async function ensureSchema() {
   const turso = getTurso();
   if (!turso) return;
 
-  await turso.execute(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      email TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      name TEXT,
-      balance REAL DEFAULT 0,
-      is_verified INTEGER DEFAULT 0,
-      id_number TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    )
-  `);
-
-  await turso.execute(`
-    CREATE TABLE IF NOT EXISTS transactions (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      type TEXT NOT NULL, -- transfer_in, transfer_out, topup, payment
-      amount REAL NOT NULL,
-      counterpart TEXT,
-      note TEXT,
-      status TEXT DEFAULT 'completed',
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    )
-  `);
-
-  await turso.execute(`
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      token TEXT UNIQUE NOT NULL,
-      expires_at TEXT NOT NULL,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    )
-  `);
+  await turso.batch(
+    [
+      `CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        name TEXT,
+        balance REAL DEFAULT 0,
+        is_verified INTEGER DEFAULT 0,
+        id_number TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )`,
+      `CREATE TABLE IF NOT EXISTS transactions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        counterpart TEXT,
+        note TEXT,
+        status TEXT DEFAULT 'completed',
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_transactions_created ON transactions(created_at)`,
+      `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
+    ],
+    "write"
+  );
 }
