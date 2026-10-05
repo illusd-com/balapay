@@ -48,7 +48,10 @@ export default function TransferPage() {
 
   return (
     <div className="px-4 pt-6 space-y-6">
-      <h1 className="text-xl font-bold text-slate-900">轉帳</h1>
+      <div>
+        <h1 className="text-xl font-bold text-slate-900">安全轉帳</h1>
+        <p className="text-xs text-slate-400 mt-0.5">銀行級加密 · 即時到帳 · 可追蹤紀錄</p>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
           <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl">{error}</div>
