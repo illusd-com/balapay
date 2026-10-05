@@ -30,13 +30,15 @@ export async function checkBlagovId(
       return { ok: false, reason: "身分證字號或驗證密碼不正確，請重試" };
     }
 
-    const match = text.match(/id=true\/name=([^\s*\/]+)/i);
+    const match = text.match(/id=true\/name=([^\s*/]+)/i);
     if (match && match[1] && match[1].toLowerCase() !== "unknow") {
       return { ok: true, name: decodeURIComponent(match[1]) };
     }
 
+    // Fallback parse: /id=true/name=張三
     if (/id=true/i.test(text)) {
-      const namePart = text.split(/name=/i)[1]?.split(/[\s*\/]//)[0]?.trim();
+      const after = text.split(/name=/i)[1] || "";
+      const namePart = after.split(/[\s*/]/)[0]?.trim();
       if (namePart && namePart.toLowerCase() !== "unknow") {
         return { ok: true, name: namePart };
       }
@@ -49,6 +51,7 @@ export async function checkBlagovId(
   }
 }
 
+/** 比對使用者填的姓名與 API 回傳姓名（允許空白差異） */
 export function namesMatch(input: string, apiName: string): boolean {
   const a = input.replace(/\s+/g, "").trim();
   const b = apiName.replace(/\s+/g, "").trim();
