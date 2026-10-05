@@ -11,24 +11,45 @@ import {
   Lock,
   FileCheck,
   User,
+  Loader2,
 } from "lucide-react";
+
+type Me = {
+  id: string;
+  email: string;
+  name: string | null;
+  balance: number;
+  is_verified: boolean;
+};
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<{
-    name: string | null;
-    email: string;
-    is_verified: boolean;
-  } | null>(null);
+  const [user, setUser] = useState<Me | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setUser({ name: "Demo User", email: "demo@balapay.com", is_verified: true });
-  }, []);
+    fetch("/api/me")
+      .then((r) => {
+        if (!r.ok) throw new Error("未登入");
+        return r.json();
+      })
+      .then((data) => setUser(data))
+      .catch(() => router.push("/login"))
+      .finally(() => setLoading(false));
+  }, [router]);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
     router.refresh();
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-green-600" />
+      </div>
+    );
   }
 
   return (
@@ -47,6 +68,9 @@ export default function ProfilePage() {
           <p className="text-sm text-slate-500 flex items-center gap-1 mt-0.5 truncate">
             <Mail className="w-3.5 h-3.5 shrink-0" />
             {user?.email}
+          </p>
+          <p className="text-xs text-slate-400 mt-1 tabular-nums">
+            餘額 {user?.balance?.toLocaleString() ?? 0} BLA
           </p>
         </div>
       </div>
@@ -74,14 +98,14 @@ export default function ProfilePage() {
               <div className="flex items-start gap-2">
                 <Lock className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  您的帳戶資料與交易紀錄受 256-bit SSL 加密保護，符合銀行級資安標準。
+                  資料存於 Turso 加密資料庫，傳輸採 256-bit TLS，密碼以 bcrypt 雜湊。
                 </p>
               </div>
             </div>
           </motion.div>
         ) : (
           <p className="text-sm text-slate-500">
-            尚未完成實名驗證。請重新註冊並填寫真實姓名與身分證字號以完成驗證。
+            尚未完成實名驗證。請重新註冊並填寫真實姓名與身分證字號。
           </p>
         )}
       </div>
@@ -91,15 +115,15 @@ export default function ProfilePage() {
         <ul className="space-y-2 text-xs text-slate-600">
           <li className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            傳輸層 256-bit TLS 加密
+            Turso 正式資料庫 · 傳輸層 TLS
           </li>
           <li className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            密碼以 bcrypt 雜湊儲存
+            密碼 bcrypt 雜湊 · JWT HttpOnly Cookie
           </li>
           <li className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            Session 採 JWT + HttpOnly Cookie
+            轉帳原子批次寫入 · 交易可追蹤
           </li>
           <li className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />

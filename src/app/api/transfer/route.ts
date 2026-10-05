@@ -6,22 +6,31 @@ import { v4 as uuidv4 } from "uuid";
 
 export async function POST(req: NextRequest) {
   try {
+    await ensureSchema();
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "請先登入" }, { status: 401 });
     }
 
-    const { toEmail, amount, note } = await req.json();
-    const num = typeof amount === "number" ? amount : parseFloat(amount);
+    const body = await req.json();
+    const toEmail = String(body.toEmail || "")
+      .toLowerCase()
+      .trim();
+    const num =
+      typeof body.amount === "number" ? body.amount : parseFloat(body.amount);
+    const note = String(body.note || "").slice(0, 200);
 
-    if (!toEmail || typeof toEmail !== "string") {
-      return NextResponse.json({ error: "請輸入收款人 Email" }, { status: 400 });
+    if (!toEmail || !toEmail.includes("@")) {
+      return NextResponse.json({ error: "請輸入有效的收款人 Email" }, { status: 400 });
     }
     if (isNaN(num) || num <= 0) {
       return NextResponse.json({ error: "請輸入有效金額" }, { status: 400 });
     }
-    if (num > 1000000) {
+    if (num > 1_000_000) {
       return NextResponse.json({ error: "單筆轉帳上限 1,000,000 BLA" }, { status: 400 });
+    }
+    if (toEmail === session.email.toLowerCase()) {
+      return NextResponse.json({ error: "無法轉帳給自己" }, { status: 400 });
     }
 
     const turso = getTurso();
@@ -29,9 +38,9 @@ export async function POST(req: NextRequest) {
     if (!turso) {
       const result = demoTransfer({
         fromUserId: session.id,
-        toEmail: toEmail.toLowerCase().trim(),
+        toEmail,
         amount: num,
-        note: note || "",
+        note,
       });
       return NextResponse.json({
         success: true,
@@ -43,67 +52,69 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    await ensureSchema();
-
-    if (session.balance < num) {
-      return NextResponse.json({ error: "餘額不足" }, { status: 400 });
+    const senderRes = await turso.execute({
+      sql: "SELECT id, email, balance FROM users WHERE id = ?",
+      args: [session.id],
+    });
+    if (senderRes.rows.length === 0) {
+      return NextResponse.json({ error: "帳戶不存在" }, { status: 404 });
     }
-    if (toEmail.toLowerCase() === session.email.toLowerCase()) {
-      return NextResponse.json({ error: "無法轉帳給自己" }, { status: 400 });
+    const senderBalance = Number(senderRes.rows[0].balance) || 0;
+    if (senderBalance < num) {
+      return NextResponse.json({ error: "餘額不足" }, { status: 400 });
     }
 
     const recipientRes = await turso.execute({
       sql: "SELECT id, email, balance FROM users WHERE email = ?",
-      args: [toEmail.toLowerCase().trim()],
+      args: [toEmail],
     });
-
-    let recipientId: string | null = null;
-    if (recipientRes.rows.length > 0) {
-      recipientId = recipientRes.rows[0].id as string;
-    }
-
-    await turso.execute({
-      sql: "UPDATE users SET balance = balance - ?, updated_at = datetime('now') WHERE id = ? AND balance >= ?",
-      args: [num, session.id, num],
-    });
+    const recipientId =
+      recipientRes.rows.length > 0 ? (recipientRes.rows[0].id as string) : null;
 
     const outId = uuidv4();
-    await turso.execute({
-      sql: `INSERT INTO transactions (id, user_id, type, amount, counterpart, note, status)
-            VALUES (?, ?, 'transfer_out', ?, ?, ?, 'completed')`,
-      args: [outId, session.id, -num, toEmail.toLowerCase().trim(), note || ""],
-    });
+    const inId = uuidv4();
+    const newSenderBal = Math.round((senderBalance - num) * 100) / 100;
+
+    const statements: { sql: string; args: any[] }[] = [
+      {
+        sql: "UPDATE users SET balance = ?, updated_at = datetime('now') WHERE id = ? AND balance >= ?",
+        args: [newSenderBal, session.id, num],
+      },
+      {
+        sql: `INSERT INTO transactions (id, user_id, type, amount, counterpart, note, status)
+              VALUES (?, ?, 'transfer_out', ?, ?, ?, 'completed')`,
+        args: [outId, session.id, -num, toEmail, note],
+      },
+    ];
 
     if (recipientId) {
-      await turso.execute({
-        sql: "UPDATE users SET balance = balance + ?, updated_at = datetime('now') WHERE id = ?",
-        args: [num, recipientId],
+      const recipBal = Number(recipientRes.rows[0].balance) || 0;
+      const newRecipBal = Math.round((recipBal + num) * 100) / 100;
+      statements.push({
+        sql: "UPDATE users SET balance = ?, updated_at = datetime('now') WHERE id = ?",
+        args: [newRecipBal, recipientId],
       });
-      const inId = uuidv4();
-      await turso.execute({
+      statements.push({
         sql: `INSERT INTO transactions (id, user_id, type, amount, counterpart, note, status)
               VALUES (?, ?, 'transfer_in', ?, ?, ?, 'completed')`,
-        args: [inId, recipientId, num, session.email, note || ""],
+        args: [inId, recipientId, num, session.email, note],
       });
     }
 
-    const balRes = await turso.execute({
-      sql: "SELECT balance FROM users WHERE id = ?",
-      args: [session.id],
-    });
-    const fromBalance = (balRes.rows[0]?.balance as number) ?? session.balance - num;
+    await turso.batch(statements, "write");
 
     return NextResponse.json({
       success: true,
       message: recipientId
         ? `已成功轉出 ${num} BLA，對方已入帳`
-        : `已成功轉出 ${num} BLA（收款人尚未註冊，款項將於對方開戶後入帳）`,
-      fromBalance,
-      toEmail: toEmail.toLowerCase().trim(),
+        : `已成功轉出 ${num} BLA（收款人尚未註冊，款項將於對方開戶後可對帳）`,
+      fromBalance: newSenderBal,
+      toEmail,
       amount: num,
       received: Boolean(recipientId),
     });
   } catch (e: any) {
+    console.error("[transfer]", e);
     return NextResponse.json({ error: e.message || "轉帳失敗" }, { status: 400 });
   }
 }
