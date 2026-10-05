@@ -1,5 +1,4 @@
 import { getSession } from "@/lib/auth";
-import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -17,7 +16,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="px-4 pt-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-slate-500">您好，</p>
@@ -42,13 +40,11 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* Balance Card */}
       <DashboardClient balance={user.balance} />
 
-      {/* Quick Actions */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { href: "/transfer", icon: ArrowUpRight, label: "轉帳", color: "bg-rose-50 text-rose-500" },
+          { href: "/transfer", icon: ArrowUpRight, label: "轉帳", color: "bg-green-50 text-green-600" },
           { href: "/transfer?mode=receive", icon: ArrowDownLeft, label: "收款", color: "bg-emerald-50 text-emerald-500" },
           { href: "/history", icon: QrCode, label: "掃碼", color: "bg-blue-50 text-blue-500" },
           { href: "/profile", icon: Plus, label: "儲值", color: "bg-violet-50 text-violet-500" },
@@ -56,7 +52,7 @@ export default async function DashboardPage() {
           <Link
             key={a.label}
             href={a.href}
-            className="flex flex-col items-center gap-2 py-3 rounded-2xl bg-white border border-slate-100 hover:border-rose-100 active:scale-95 transition-all duration-150"
+            className="flex flex-col items-center gap-2 py-3 rounded-2xl bg-white border border-slate-100 hover:border-green-100 active:scale-95 transition-all duration-150"
           >
             <div className={`w-10 h-10 rounded-xl ${a.color} flex items-center justify-center`}>
               <a.icon className="w-5 h-5" />
@@ -66,11 +62,10 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Recent hint */}
       <div className="bg-white rounded-2xl border border-slate-100 p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-slate-900">最近交易</h2>
-          <Link href="/history" className="text-xs text-rose-500 font-medium">
+          <Link href="/history" className="text-xs text-green-600 font-medium">
             查看全部
           </Link>
         </div>
