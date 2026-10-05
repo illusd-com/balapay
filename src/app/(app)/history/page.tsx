@@ -14,7 +14,6 @@ export default function HistoryPage() {
   return (
     <div className="px-4 pt-6 space-y-5">
       <h1 className="text-xl font-bold text-slate-900">交易紀錄</h1>
-
       <div className="space-y-2">
         {mockTx.map((tx, i) => (
           <motion.div
@@ -26,7 +25,7 @@ export default function HistoryPage() {
           >
             <div
               className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                tx.type === "in" ? "bg-emerald-50 text-emerald-500" : "bg-rose-50 text-rose-500"
+                tx.type === "in" ? "bg-emerald-50 text-emerald-500" : "bg-green-50 text-green-600"
               }`}
             >
               {tx.type === "in" ? (
@@ -41,11 +40,7 @@ export default function HistoryPage() {
                 {tx.time} · {tx.note}
               </p>
             </div>
-            <p
-              className={`font-semibold ${
-                tx.amount > 0 ? "text-emerald-500" : "text-slate-800"
-              }`}
-            >
+            <p className={`font-semibold ${tx.amount > 0 ? "text-emerald-500" : "text-slate-800"}`}>
               {tx.amount > 0 ? "+" : ""}
               {tx.amount}
             </p>

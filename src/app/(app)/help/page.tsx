@@ -27,20 +27,15 @@ export default function HelpPage() {
   async function handleSend(e?: React.FormEvent) {
     e?.preventDefault();
     if (!input.trim() || loading) return;
-
     const userMsg = input.trim();
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setLoading(true);
-
     try {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMsg,
-          history: messages,
-        }),
+        body: JSON.stringify({ message: userMsg, history: messages }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "無法取得回覆");
@@ -61,7 +56,6 @@ export default function HelpPage() {
         <h1 className="text-xl font-bold text-slate-900">AI 客服</h1>
         <p className="text-xs text-slate-400">由 NVIDIA NIM 驅動</p>
       </div>
-
       <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-2">
         <AnimatePresence initial={false}>
           {messages.map((m, i) => (
@@ -74,9 +68,7 @@ export default function HelpPage() {
             >
               <div
                 className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                  m.role === "user"
-                    ? "bg-rose-500 text-white"
-                    : "bg-slate-100 text-slate-600"
+                  m.role === "user" ? "bg-green-600 text-white" : "bg-slate-100 text-slate-600"
                 }`}
               >
                 {m.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
@@ -84,7 +76,7 @@ export default function HelpPage() {
               <div
                 className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                   m.role === "user"
-                    ? "bg-rose-500 text-white rounded-br-md"
+                    ? "bg-green-600 text-white rounded-br-md"
                     : "bg-white border border-slate-100 text-slate-800 rounded-bl-md"
                 }`}
               >
@@ -105,24 +97,20 @@ export default function HelpPage() {
         )}
         <div ref={bottomRef} />
       </div>
-
-      <form
-        onSubmit={handleSend}
-        className="px-4 py-3 border-t border-slate-100 bg-white/80 backdrop-blur"
-      >
+      <form onSubmit={handleSend} className="px-4 py-3 border-t border-slate-100 bg-white/80 backdrop-blur">
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="輸入您的問題..."
-            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:border-rose-400 focus:ring-2 focus:ring-rose-100 outline-none transition-all text-sm"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all text-sm text-slate-900 bg-white placeholder:text-slate-400"
             disabled={loading}
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="w-11 h-11 rounded-xl bg-rose-500 text-white flex items-center justify-center hover:bg-rose-600 active:scale-95 transition-all duration-150 disabled:opacity-50"
+            className="w-11 h-11 rounded-xl bg-green-600 text-white flex items-center justify-center hover:bg-green-700 active:scale-95 transition-all duration-150 disabled:opacity-50"
           >
             <Send className="w-4 h-4" />
           </button>

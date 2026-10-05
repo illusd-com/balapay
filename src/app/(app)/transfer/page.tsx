@@ -26,9 +26,7 @@ export default function TransferPage() {
     await new Promise((r) => setTimeout(r, 1200));
     setLoading(false);
     setSuccess(true);
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 1800);
+    setTimeout(() => router.push("/dashboard"), 1800);
   }
 
   if (success) {
@@ -51,12 +49,10 @@ export default function TransferPage() {
   return (
     <div className="px-4 pt-6 space-y-6">
       <h1 className="text-xl font-bold text-slate-900">轉帳</h1>
-
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
-          <div className="bg-rose-50 text-rose-600 text-sm px-4 py-3 rounded-xl">{error}</div>
+          <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl">{error}</div>
         )}
-
         <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">收款人 Email</label>
@@ -68,11 +64,10 @@ export default function TransferPage() {
                 value={toEmail}
                 onChange={(e) => setToEmail(e.target.value)}
                 placeholder="friend@example.com"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-rose-400 focus:ring-2 focus:ring-rose-100 outline-none transition-all text-sm"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all text-sm text-slate-900 bg-white placeholder:text-slate-400"
               />
             </div>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">金額 (BLA)</label>
             <div className="relative">
@@ -85,11 +80,10 @@ export default function TransferPage() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-rose-400 focus:ring-2 focus:ring-rose-100 outline-none transition-all text-sm font-semibold text-lg"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all text-sm font-semibold text-lg text-slate-900 bg-white placeholder:text-slate-400"
               />
             </div>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">備註（選填）</label>
             <input
@@ -97,15 +91,14 @@ export default function TransferPage() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="例如：午餐費用"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-rose-400 focus:ring-2 focus:ring-rose-100 outline-none transition-all text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all text-sm text-slate-900 bg-white placeholder:text-slate-400"
             />
           </div>
         </div>
-
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-rose-500 text-white font-semibold py-3.5 rounded-xl hover:bg-rose-600 active:scale-[0.98] transition-all duration-150 disabled:opacity-60 flex items-center justify-center gap-2 shadow-md shadow-rose-200"
+          className="w-full bg-green-600 text-white font-semibold py-3.5 rounded-xl hover:bg-green-700 active:scale-[0.98] transition-all duration-150 disabled:opacity-60 flex items-center justify-center gap-2 shadow-md shadow-green-200"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           {loading ? "處理中..." : "確認轉帳"}
