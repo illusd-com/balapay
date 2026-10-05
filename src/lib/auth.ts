@@ -3,6 +3,11 @@ import { cookies } from "next/headers";
 import { getTurso } from "./turso";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
+import {
+  demoGetUserById,
+  demoGetUserByEmail,
+  demoCreateUser,
+} from "./store";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "dev-secret-change-me-in-production-32chars"
@@ -52,6 +57,17 @@ export async function getSession(): Promise<User | null> {
 
   const turso = getTurso();
   if (!turso) {
+    const demo = demoGetUserById(userId);
+    if (demo) {
+      return {
+        id: demo.id,
+        email: demo.email,
+        name: demo.name,
+        balance: demo.balance,
+        is_verified: demo.is_verified,
+        id_number: null,
+      };
+    }
     return {
       id: userId,
       email: "demo@balapay.com",
@@ -87,15 +103,21 @@ export async function registerUser(
   isVerified = false
 ) {
   const turso = getTurso();
+
+  if (!turso) {
+    const user = demoCreateUser({
+      email,
+      name,
+      password,
+      is_verified: isVerified,
+    });
+    return { id: user.id, email: user.email, name: user.name, is_verified: user.is_verified };
+  }
+
   const id = uuidv4();
   const password_hash = await hashPassword(password);
 
-  if (!turso) {
-    return { id, email, name, is_verified: isVerified };
-  }
-
   try {
-    // Note: id_number is intentionally NOT stored (one-time verification only)
     await turso.execute({
       sql: `INSERT INTO users (id, email, password_hash, name, balance, is_verified) VALUES (?, ?, ?, ?, 1000, ?)`,
       args: [id, email.toLowerCase(), password_hash, name, isVerified ? 1 : 0],
@@ -113,7 +135,13 @@ export async function loginUser(email: string, password: string) {
   const turso = getTurso();
 
   if (!turso) {
+    const demo = demoGetUserByEmail(email);
+    if (demo && demo.password === password) {
+      return { id: demo.id, email: demo.email, name: demo.name };
+    }
     if (email === "demo@balapay.com" && password === "demo1234") {
+      const u = demoGetUserById("demo-user-id");
+      if (u) return { id: u.id, email: u.email, name: u.name };
       return { id: "demo-user-id", email, name: "Demo User" };
     }
     throw new Error("帳號或密碼錯誤（Demo: demo@balapay.com / demo1234）");
