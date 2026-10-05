@@ -1,16 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --primary: #e11d48; /* spicy rose for 拔辣 */
+  /* Pantone palette */
+  --pantone-2267: #9BE198;   /* bright green */
+  --pantone-7485: #D0DEBB;   /* soft sage */
+  --pantone-2253: #BDE9C9;   /* mint */
+  --pantone-6198: #C9CCB6;   /* gray-green */
+
+  --background: #f7faf5;
+  --foreground: #1a2e1a;
+  --primary: #2f8f3a;        /* darkened 2267 for white text contrast */
   --primary-foreground: #ffffff;
+  --primary-light: #9BE198;
   --card: #ffffff;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
-  --success: #10b981;
-  --warning: #f59e0b;
+  --muted: #eef5e8;
+  --muted-foreground: #4a5c4a;
+  --border: #d0debb;
+  --success: #2f8f3a;
+  --warning: #c9a227;
   --radius: 1rem;
 }
 
@@ -31,12 +38,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0f172a;
-    --foreground: #f8fafc;
-    --card: #1e293b;
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
-    --border: #334155;
+    --background: #0f1a0f;
+    --foreground: #e8f5e8;
+    --card: #1a2a1a;
+    --muted: #1a2a1a;
+    --muted-foreground: #a0b8a0;
+    --border: #2a3a2a;
   }
 }
 
@@ -48,7 +55,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Reduced motion */
+/* Ensure form inputs always have visible text */
+input, textarea, select {
+  color: #1a2e1a !important;
+  background-color: #ffffff !important;
+}
+input::placeholder, textarea::placeholder {
+  color: #6b7c6b !important;
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -59,7 +75,6 @@ body {
   }
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -68,9 +83,9 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #c9ccb6;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #9be198;
 }

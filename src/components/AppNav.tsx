@@ -28,13 +28,13 @@ export function AppNav() {
               href={item.href}
               className={cn(
                 "relative flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors duration-150",
-                active ? "text-rose-500" : "text-slate-400 hover:text-slate-600"
+                active ? "text-green-600" : "text-slate-400 hover:text-slate-600"
               )}
             >
               {active && (
                 <motion.div
                   layoutId="nav-pill"
-                  className="absolute inset-0 bg-rose-50 rounded-xl"
+                  className="absolute inset-0 bg-green-50 rounded-xl"
                   transition={{ type: "spring", duration: 0.35, bounce: 0.2 }}
                 />
               )}
