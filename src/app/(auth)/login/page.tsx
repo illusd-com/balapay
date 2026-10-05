@@ -36,7 +36,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 via-white to-orange-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-50 px-4">
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -45,10 +45,10 @@ export default function LoginPage() {
       >
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-rose-200">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-green-200">
               B
             </div>
-            <span className="font-bold text-xl">拔辣支付</span>
+            <span className="font-bold text-xl text-slate-900">拔辣支付</span>
           </Link>
           <h1 className="text-2xl font-bold text-slate-900">歡迎回來</h1>
           <p className="mt-1 text-slate-500 text-sm">登入您的 BalaPAY 帳戶</p>
@@ -56,13 +56,13 @@ export default function LoginPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-3xl shadow-xl shadow-rose-100/50 border border-slate-100 p-6 md:p-8 space-y-5"
+          className="bg-white rounded-3xl shadow-xl shadow-green-100/50 border border-slate-100 p-6 md:p-8 space-y-5"
         >
           {error && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
-              className="bg-rose-50 text-rose-600 text-sm px-4 py-3 rounded-xl"
+              className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl"
             >
               {error}
             </motion.div>
@@ -78,7 +78,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-rose-400 focus:ring-2 focus:ring-rose-100 outline-none transition-all text-sm"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all text-sm text-slate-900 bg-white placeholder:text-slate-400"
               />
             </div>
           </div>
@@ -93,7 +93,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:border-rose-400 focus:ring-2 focus:ring-rose-100 outline-none transition-all text-sm"
+                className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all text-sm text-slate-900 bg-white placeholder:text-slate-400"
               />
               <button
                 type="button"
@@ -108,7 +108,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-rose-500 text-white font-semibold py-3 rounded-xl hover:bg-rose-600 active:scale-[0.98] transition-all duration-150 disabled:opacity-60 flex items-center justify-center gap-2 shadow-md shadow-rose-200"
+            className="w-full bg-green-600 text-white font-semibold py-3 rounded-xl hover:bg-green-700 active:scale-[0.98] transition-all duration-150 disabled:opacity-60 flex items-center justify-center gap-2 shadow-md shadow-green-200"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             {loading ? "登入中..." : "登入"}
@@ -116,7 +116,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-slate-500">
             還沒有帳戶？{" "}
-            <Link href="/register" className="text-rose-500 font-medium hover:underline">
+            <Link href="/register" className="text-green-600 font-medium hover:underline">
               立即註冊
             </Link>
           </p>
