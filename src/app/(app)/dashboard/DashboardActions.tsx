@@ -7,7 +7,7 @@ import { ArrowUpRight, ArrowDownLeft, QrCode, Plus } from "lucide-react";
 const actions = [
   { href: "/transfer", icon: ArrowUpRight, label: "轉帳", color: "bg-green-50 text-green-600" },
   { href: "/transfer", icon: ArrowDownLeft, label: "收款", color: "bg-emerald-50 text-emerald-600" },
-  { href: "/history", icon: QrCode, label: "掃碼", color: "bg-sky-50 text-sky-600" },
+  { href: "/scan", icon: QrCode, label: "掃碼", color: "bg-sky-50 text-sky-600" },
   { href: "/profile", icon: Plus, label: "儲值", color: "bg-violet-50 text-violet-600" },
 ];
 
