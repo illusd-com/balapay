@@ -2,14 +2,14 @@
 
 :root {
   /* Pantone palette */
-  --pantone-2267: #9BE198;   /* bright green */
-  --pantone-7485: #D0DEBB;   /* soft sage */
-  --pantone-2253: #BDE9C9;   /* mint */
-  --pantone-6198: #C9CCB6;   /* gray-green */
+  --pantone-2267: #9BE198;
+  --pantone-7485: #D0DEBB;
+  --pantone-2253: #BDE9C9;
+  --pantone-6198: #C9CCB6;
 
   --background: #f7faf5;
   --foreground: #1a2e1a;
-  --primary: #2f8f3a;        /* darkened 2267 for white text contrast */
+  --primary: #2f8f3a;
   --primary-foreground: #ffffff;
   --primary-light: #9BE198;
   --card: #ffffff;
@@ -32,7 +32,7 @@
   --color-border: var(--border);
   --color-success: var(--success);
   --color-warning: var(--warning);
-  --font-sans: var(--font-noto), var(--font-inter), system-ui, sans-serif;
+  --font-sans: var(--font-inter), "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "Helvetica Neue", system-ui, sans-serif;
   --radius-lg: var(--radius);
 }
 
