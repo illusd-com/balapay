@@ -119,7 +119,7 @@ export async function registerUser(
 
   try {
     await turso.execute({
-      sql: `INSERT INTO users (id, email, password_hash, name, balance, is_verified) VALUES (?, ?, ?, ?, 1000, ?)`,
+      sql: `INSERT INTO users (id, email, password_hash, name, balance, is_verified) VALUES (?, ?, ?, ?, 38, ?)`,
       args: [id, email.toLowerCase(), password_hash, name, isVerified ? 1 : 0],
     });
     return { id, email, name, is_verified: isVerified };
