@@ -13,12 +13,23 @@ export default function HelpPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "您好！我是拔辣支付 AI 客服。有什麼可以幫您的嗎？例如：如何轉帳、實名驗證、餘額查詢等。",
+      content:
+        "您好！我是拔辣支付 AI 客服。可直接問「我的餘額」、轉帳／掃碼怎麼點，或實名驗證步驟。底部導覽：首頁｜轉帳｜掃碼｜紀錄｜我的。",
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [balance, setBalance] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d.balance === "number") setBalance(d.balance);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -27,19 +38,25 @@ export default function HelpPage() {
   async function handleSend(e?: React.FormEvent) {
     e?.preventDefault();
     if (!input.trim() || loading) return;
+
     const userMsg = input.trim();
     setInput("");
     setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setLoading(true);
+
     try {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg, history: messages }),
+        body: JSON.stringify({
+          message: userMsg,
+          history: messages,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "無法取得回覆");
       setMessages((prev) => [...prev, { role: "assistant", content: data.content }]);
+      if (typeof data.balance === "number") setBalance(data.balance);
     } catch (err: any) {
       setMessages((prev) => [
         ...prev,
@@ -54,8 +71,14 @@ export default function HelpPage() {
     <div className="flex flex-col h-[calc(100vh-5rem)]">
       <div className="px-4 pt-4 pb-2">
         <h1 className="text-xl font-bold text-slate-900">AI 客服</h1>
-        <p className="text-xs text-slate-400">由 NVIDIA NIM 驅動</p>
+        <p className="text-xs text-slate-400">
+          由 NVIDIA NIM 驅動
+          {balance !== null && (
+            <span className="ml-2 text-green-600 font-medium">｜餘額 {balance} BLA</span>
+          )}
+        </p>
       </div>
+
       <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-2">
         <AnimatePresence initial={false}>
           {messages.map((m, i) => (
@@ -68,7 +91,9 @@ export default function HelpPage() {
             >
               <div
                 className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                  m.role === "user" ? "bg-green-600 text-white" : "bg-slate-100 text-slate-600"
+                  m.role === "user"
+                    ? "bg-green-600 text-white"
+                    : "bg-slate-100 text-slate-600"
                 }`}
               >
                 {m.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
@@ -97,7 +122,11 @@ export default function HelpPage() {
         )}
         <div ref={bottomRef} />
       </div>
-      <form onSubmit={handleSend} className="px-4 py-3 border-t border-slate-100 bg-white/80 backdrop-blur">
+
+      <form
+        onSubmit={handleSend}
+        className="px-4 py-3 border-t border-slate-100 bg-white/80 backdrop-blur"
+      >
         <div className="flex gap-2">
           <input
             type="text"
