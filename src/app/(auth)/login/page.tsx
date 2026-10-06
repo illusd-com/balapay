@@ -121,10 +121,6 @@ export default function LoginPage() {
             </Link>
           </p>
         </form>
-
-        <p className="text-center text-xs text-slate-400 mt-6">
-          Demo 帳號：demo@balapay.com / demo1234
-        </p>
       </motion.div>
     </div>
   );

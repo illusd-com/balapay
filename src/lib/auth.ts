@@ -70,9 +70,9 @@ export async function getSession(): Promise<User | null> {
     }
     return {
       id: userId,
-      email: "demo@balapay.com",
-      name: "Demo User",
-      balance: 12850.5,
+      email: "user@balapay.com",
+      name: "使用者",
+      balance: 38,
       is_verified: true,
       id_number: null,
     };
@@ -139,12 +139,7 @@ export async function loginUser(email: string, password: string) {
     if (demo && demo.password === password) {
       return { id: demo.id, email: demo.email, name: demo.name };
     }
-    if (email === "demo@balapay.com" && password === "demo1234") {
-      const u = demoGetUserById("demo-user-id");
-      if (u) return { id: u.id, email: u.email, name: u.name };
-      return { id: "demo-user-id", email, name: "Demo User" };
-    }
-    throw new Error("帳號或密碼錯誤（Demo: demo@balapay.com / demo1234）");
+    throw new Error("帳號或密碼錯誤");
   }
 
   const result = await turso.execute({
