@@ -82,7 +82,7 @@ export function demoCreateUser(data: {
     id,
     email: data.email.toLowerCase(),
     name: data.name,
-    balance: 1000,
+    balance: 38,
     is_verified: data.is_verified ?? false,
     password: data.password,
   };
