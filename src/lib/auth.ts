@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import { getTurso } from "./turso";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
@@ -10,8 +11,11 @@ import {
 } from "./store";
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "dev-secret-change-me-in-production-32chars"
+  process.env.JWT_SECRET || "balapay-stable-dev-secret-do-set-env-32b"
 );
+
+const COOKIE_NAME = "balapay_session";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 export interface User {
   id: string;
@@ -22,6 +26,17 @@ export interface User {
   id_number: string | null;
 }
 
+export function sessionCookieOptions() {
+  const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  return {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "lax" as const,
+    maxAge: COOKIE_MAX_AGE,
+    path: "/",
+  };
+}
+
 export async function hashPassword(password: string) {
   return bcrypt.hash(password, 12);
 }
@@ -30,18 +45,29 @@ export async function verifyPassword(password: string, hash: string) {
   return bcrypt.compare(password, hash);
 }
 
-export async function createToken(userId: string) {
-  return new SignJWT({ sub: userId })
+export async function createToken(
+  userId: string,
+  extra?: { email?: string; name?: string | null }
+) {
+  return new SignJWT({
+    sub: userId,
+    email: extra?.email || "",
+    name: extra?.name || "",
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime("30d")
     .sign(JWT_SECRET);
 }
 
 export async function verifyToken(token: string) {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload.sub as string;
+    return {
+      userId: payload.sub as string,
+      email: (payload.email as string) || "",
+      name: (payload.name as string) || "",
+    };
   } catch {
     return null;
   }
@@ -50,15 +76,15 @@ export async function verifyToken(token: string) {
 export async function getSession(): Promise<User | null> {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get("balapay_session")?.value;
+    const token = cookieStore.get(COOKIE_NAME)?.value;
     if (!token) return null;
 
-    const userId = await verifyToken(token);
-    if (!userId) return null;
+    const claims = await verifyToken(token);
+    if (!claims?.userId) return null;
 
     const turso = getTurso();
     if (!turso) {
-      const local = demoGetUserById(userId);
+      const local = demoGetUserById(claims.userId);
       if (local) {
         return {
           id: local.id,
@@ -69,25 +95,51 @@ export async function getSession(): Promise<User | null> {
           id_number: null,
         };
       }
+      if (claims.email) {
+        return {
+          id: claims.userId,
+          email: claims.email,
+          name: claims.name || null,
+          balance: 0,
+          is_verified: false,
+          id_number: null,
+        };
+      }
       return null;
     }
 
-    const result = await turso.execute({
-      sql: "SELECT id, email, name, balance, is_verified, id_number FROM users WHERE id = ?",
-      args: [userId],
-    });
+    try {
+      const result = await turso.execute({
+        sql: "SELECT id, email, name, balance, is_verified, id_number FROM users WHERE id = ?",
+        args: [claims.userId],
+      });
 
-    if (result.rows.length === 0) return null;
+      if (result.rows.length > 0) {
+        const row = result.rows[0];
+        return {
+          id: row.id as string,
+          email: row.email as string,
+          name: (row.name as string) || null,
+          balance: Number(row.balance) || 0,
+          is_verified: Boolean(row.is_verified),
+          id_number: (row.id_number as string) || null,
+        };
+      }
+    } catch (dbErr) {
+      console.error("[getSession] turso", dbErr);
+    }
 
-    const row = result.rows[0];
-    return {
-      id: row.id as string,
-      email: row.email as string,
-      name: (row.name as string) || null,
-      balance: Number(row.balance) || 0,
-      is_verified: Boolean(row.is_verified),
-      id_number: (row.id_number as string) || null,
-    };
+    if (claims.email) {
+      return {
+        id: claims.userId,
+        email: claims.email,
+        name: claims.name || null,
+        balance: 0,
+        is_verified: false,
+        id_number: null,
+      };
+    }
+    return null;
   } catch (e) {
     console.error("[getSession]", e);
     return null;
@@ -162,18 +214,28 @@ export async function loginUser(email: string, password: string) {
   };
 }
 
+export function attachSessionCookie(res: NextResponse, token: string) {
+  res.cookies.set(COOKIE_NAME, token, sessionCookieOptions());
+  return res;
+}
+
+export function clearSessionOnResponse(res: NextResponse) {
+  res.cookies.set(COOKIE_NAME, "", {
+    ...sessionCookieOptions(),
+    maxAge: 0,
+  });
+  return res;
+}
+
 export async function setSessionCookie(token: string) {
   const cookieStore = await cookies();
-  cookieStore.set("balapay_session", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7,
-    path: "/",
-  });
+  cookieStore.set(COOKIE_NAME, token, sessionCookieOptions());
 }
 
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
-  cookieStore.delete("balapay_session");
+  cookieStore.set(COOKIE_NAME, "", {
+    ...sessionCookieOptions(),
+    maxAge: 0,
+  });
 }

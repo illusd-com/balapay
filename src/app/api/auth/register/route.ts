@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { registerUser, createToken, setSessionCookie } from "@/lib/auth";
+import { registerUser, createToken, attachSessionCookie } from "@/lib/auth";
 import { ensureSchema } from "@/lib/turso";
 import { checkBlagovId, namesMatch } from "@/lib/blagov";
 import { verifyRecaptcha } from "@/lib/recaptcha";
@@ -42,10 +42,12 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await registerUser(email, password, blagov.name.trim(), true);
-    const token = await createToken(user.id);
-    await setSessionCookie(token);
+    const token = await createToken(user.id, {
+      email: user.email,
+      name: user.name,
+    });
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       user: {
         id: user.id,
@@ -55,6 +57,7 @@ export async function POST(req: NextRequest) {
       },
       verifiedName: blagov.name,
     });
+    return attachSessionCookie(res, token);
   } catch (e: any) {
     return NextResponse.json({ error: e.message || "註冊失敗" }, { status: 400 });
   }
