@@ -1,9 +1,6 @@
 /**
  * Blagov e政府身分驗證
  * GET https://balala-government.vercel.app/id-check/id-pass={id}/password={password}
- *
- * 成功: /id=true/name={真實姓名}
- * 失敗: /id=false/name=unknow  或含 *try-again*
  */
 
 export type BlagovResult =
@@ -19,41 +16,66 @@ export async function checkBlagovId(
   const url = `https://balala-government.vercel.app/id-check/id-pass=${id}/password=${pw}`;
 
   try {
-    const res = await fetch(url, {
-      method: "GET",
-      cache: "no-store",
-      signal: AbortSignal.timeout(15000),
-    });
-    const text = (await res.text()).trim();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: "GET",
+        cache: "no-store",
+        signal: controller.signal,
+        headers: { Accept: "text/plain, */*" },
+      });
+    } finally {
+      clearTimeout(timer);
+    }
 
-    if (text.includes("*try-again*") || /id=false/i.test(text)) {
+    const text = (await res.text()).trim();
+    console.log("[blagov] status", res.status, "body", text.slice(0, 200));
+
+    if (!res.ok && !text) {
+      return { ok: false, reason: `e政府回應異常（HTTP ${res.status}）` };
+    }
+
+    if (text.includes("*try-again*") || /id\s*=\s*false/i.test(text)) {
       return { ok: false, reason: "身分證字號或驗證密碼不正確，請重試" };
     }
 
-    const match = text.match(/id=true\/name=([^\s*/]+)/i);
-    if (match && match[1] && match[1].toLowerCase() !== "unknow") {
-      return { ok: true, name: decodeURIComponent(match[1]) };
-    }
-
-    // Fallback parse: /id=true/name=張三
-    if (/id=true/i.test(text)) {
-      const after = text.split(/name=/i)[1] || "";
-      const namePart = after.split(/[\s*/]/)[0]?.trim();
-      if (namePart && namePart.toLowerCase() !== "unknow") {
-        return { ok: true, name: namePart };
+    const match = text.match(/id\s*=\s*true[\s/]*name\s*=\s*([^\s*/&]+)/i);
+    if (match?.[1] && match[1].toLowerCase() !== "unknow") {
+      try {
+        return { ok: true, name: decodeURIComponent(match[1]) };
+      } catch {
+        return { ok: true, name: match[1] };
       }
     }
 
-    return { ok: false, reason: "無法驗證身分，請稍後再試" };
+    if (/id\s*=\s*true/i.test(text)) {
+      const after = text.split(/name\s*=/i)[1] || "";
+      const namePart = after.split(/[\s*/&]/)[0]?.trim();
+      if (namePart && namePart.toLowerCase() !== "unknow") {
+        try {
+          return { ok: true, name: decodeURIComponent(namePart) };
+        } catch {
+          return { ok: true, name: namePart };
+        }
+      }
+    }
+
+    return { ok: false, reason: "無法解析 e政府回應，請稍後再試" };
   } catch (e: any) {
     console.error("[blagov]", e);
+    if (e?.name === "AbortError") {
+      return { ok: false, reason: "e政府連線逾時，請稍後再試" };
+    }
     return { ok: false, reason: "e政府服務暫時無法連線，請稍後再試" };
   }
 }
 
-/** 比對使用者填的姓名與 API 回傳姓名（允許空白差異） */
 export function namesMatch(input: string, apiName: string): boolean {
-  const a = input.replace(/\s+/g, "").trim();
-  const b = apiName.replace(/\s+/g, "").trim();
-  return a === b && a.length > 0;
+  const norm = (s: string) =>
+    s.replace(/\s+/g, "").replace(/　/g, "").trim().toLowerCase();
+  const a = norm(input);
+  const b = norm(apiName);
+  return a.length > 0 && a === b;
 }
