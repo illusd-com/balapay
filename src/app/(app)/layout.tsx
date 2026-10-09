@@ -2,12 +2,20 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { AppNav } from "@/components/AppNav";
 
+export const dynamic = "force-dynamic";
+
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
+  let session = null;
+  try {
+    session = await getSession();
+  } catch (e) {
+    console.error("[AppLayout] session", e);
+    redirect("/login");
+  }
   if (!session) {
     redirect("/login");
   }

@@ -48,52 +48,50 @@ export async function verifyToken(token: string) {
 }
 
 export async function getSession(): Promise<User | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("balapay_session")?.value;
-  if (!token) return null;
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("balapay_session")?.value;
+    if (!token) return null;
 
-  const userId = await verifyToken(token);
-  if (!userId) return null;
+    const userId = await verifyToken(token);
+    if (!userId) return null;
 
-  const turso = getTurso();
-  if (!turso) {
-    const demo = demoGetUserById(userId);
-    if (demo) {
-      return {
-        id: demo.id,
-        email: demo.email,
-        name: demo.name,
-        balance: demo.balance,
-        is_verified: demo.is_verified,
-        id_number: null,
-      };
+    const turso = getTurso();
+    if (!turso) {
+      const local = demoGetUserById(userId);
+      if (local) {
+        return {
+          id: local.id,
+          email: local.email,
+          name: local.name,
+          balance: local.balance,
+          is_verified: local.is_verified,
+          id_number: null,
+        };
+      }
+      return null;
     }
+
+    const result = await turso.execute({
+      sql: "SELECT id, email, name, balance, is_verified, id_number FROM users WHERE id = ?",
+      args: [userId],
+    });
+
+    if (result.rows.length === 0) return null;
+
+    const row = result.rows[0];
     return {
-      id: userId,
-      email: "user@balapay.com",
-      name: "使用者",
-      balance: 38,
-      is_verified: true,
-      id_number: null,
+      id: row.id as string,
+      email: row.email as string,
+      name: (row.name as string) || null,
+      balance: Number(row.balance) || 0,
+      is_verified: Boolean(row.is_verified),
+      id_number: (row.id_number as string) || null,
     };
+  } catch (e) {
+    console.error("[getSession]", e);
+    return null;
   }
-
-  const result = await turso.execute({
-    sql: "SELECT id, email, name, balance, is_verified, id_number FROM users WHERE id = ?",
-    args: [userId],
-  });
-
-  if (result.rows.length === 0) return null;
-
-  const row = result.rows[0];
-  return {
-    id: row.id as string,
-    email: row.email as string,
-    name: (row.name as string) || null,
-    balance: (row.balance as number) || 0,
-    is_verified: Boolean(row.is_verified),
-    id_number: (row.id_number as string) || null,
-  };
 }
 
 export async function registerUser(
@@ -135,9 +133,9 @@ export async function loginUser(email: string, password: string) {
   const turso = getTurso();
 
   if (!turso) {
-    const demo = demoGetUserByEmail(email);
-    if (demo && demo.password === password) {
-      return { id: demo.id, email: demo.email, name: demo.name };
+    const local = demoGetUserByEmail(email);
+    if (local && local.password === password) {
+      return { id: local.id, email: local.email, name: local.name };
     }
     throw new Error("帳號或密碼錯誤");
   }

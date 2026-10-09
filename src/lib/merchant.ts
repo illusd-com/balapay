@@ -1,5 +1,5 @@
 import { getTurso } from "./turso";
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 export type Merchant = {
   mer_id: string;
