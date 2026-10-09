@@ -11,7 +11,13 @@ export async function POST(req: NextRequest) {
     await ensureSchema();
     const session = await getSession();
     if (!session) {
-      return NextResponse.json({ error: "請先登入" }, { status: 401 });
+      return NextResponse.json(
+        {
+          error: "登入狀態無效或帳戶不在資料庫中。請登出後重新登入／註冊。",
+          code: "NO_SESSION",
+        },
+        { status: 401 }
+      );
     }
 
     const turso = getTurso();
@@ -19,16 +25,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "資料庫未連線，無法啟用商家。請確認 Vercel 已設定 TURSO_DATABASE_URL / TURSO_AUTH_TOKEN",
+            "資料庫未連線。請在 Vercel 設定 TURSO_DATABASE_URL 與 TURSO_AUTH_TOKEN 後重新部署。",
+          code: "NO_TURSO",
         },
         { status: 503 }
       );
     }
 
+    const exists = await turso.execute({
+      sql: "SELECT id, email FROM users WHERE id = ? OR email = ?",
+      args: [session.id, session.email.toLowerCase()],
+    });
+    if (exists.rows.length === 0) {
+      return NextResponse.json(
+        {
+          error: "帳戶未寫入資料庫（可能是舊版假登入）。請登出後重新註冊一次。",
+          code: "USER_NOT_IN_DB",
+        },
+        { status: 400 }
+      );
+    }
+    const realId = exists.rows[0].id as string;
+
     const body = await req.json().catch(() => ({}));
     const shopName = String(body.shopName || session.name || "我的商店").slice(0, 80);
 
-    const mer = await activateMerchant(session.id, shopName, session.email);
+    const mer = await activateMerchant(realId, shopName, session.email);
 
     return NextResponse.json({
       success: true,
@@ -39,6 +61,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (e: any) {
     console.error("[mer/activate]", e);
-    return NextResponse.json({ error: e?.message || "啟用失敗" }, { status: 400 });
+    return NextResponse.json(
+      { error: e?.message || "啟用失敗", code: "ACTIVATE_FAIL" },
+      { status: 400 }
+    );
   }
 }

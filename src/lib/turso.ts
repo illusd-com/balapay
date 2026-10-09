@@ -67,8 +67,7 @@ export async function ensureSchema() {
         counterpart TEXT,
         note TEXT,
         status TEXT DEFAULT 'completed',
-        created_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (user_id) REFERENCES users(id)
+        created_at TEXT DEFAULT (datetime('now'))
       )`,
       `CREATE TABLE IF NOT EXISTS merchants (
         mer_id TEXT PRIMARY KEY,
@@ -76,8 +75,7 @@ export async function ensureSchema() {
         shop_name TEXT NOT NULL,
         api_key TEXT NOT NULL UNIQUE,
         created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now')),
-        FOREIGN KEY (user_id) REFERENCES users(id)
+        updated_at TEXT DEFAULT (datetime('now'))
       )`,
       `CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id)`,
       `CREATE INDEX IF NOT EXISTS idx_transactions_created ON transactions(created_at)`,
