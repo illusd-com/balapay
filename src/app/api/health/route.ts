@@ -1,25 +1,19 @@
 import { NextResponse } from "next/server";
-import { getTurso, ensureSchema } from "@/lib/turso";
+import { getTurso, ensureSchema, tursoEnvStatus } from "@/lib/turso";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const hasUrl = Boolean(
-    process.env.TURSO_DATABASE_URL || process.env.LIBSQL_URL || process.env.DATABASE_URL
-  );
-  const hasToken = Boolean(
-    process.env.TURSO_AUTH_TOKEN || process.env.LIBSQL_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN
-  );
-
+  const env = tursoEnvStatus();
   const turso = getTurso();
   if (!turso) {
     return NextResponse.json({
       ok: false,
       turso: false,
-      hasUrl,
-      hasToken,
-      message: "Turso client not available — check env vars on Vercel",
+      ...env,
+      message:
+        "Turso client not available — set TURSO_DATABASE_URL + TURSO_AUTH_TOKEN on Vercel (Production) and Redeploy",
     });
   }
 
@@ -30,8 +24,7 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       turso: true,
-      hasUrl,
-      hasToken,
+      ...env,
       users: count,
       message: "Turso connected",
     });
@@ -39,10 +32,9 @@ export async function GET() {
     return NextResponse.json({
       ok: false,
       turso: true,
-      hasUrl,
-      hasToken,
+      ...env,
       error: String(e?.message || e).slice(0, 200),
-      message: "Turso client created but query failed",
+      message: "Turso client created but query failed — check token permissions / URL",
     });
   }
 }
