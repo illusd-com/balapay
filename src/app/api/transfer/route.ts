@@ -11,13 +11,13 @@ export async function POST(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "請先登入" }, { status: 401 });
     }
+    if (!session.is_verified) {
+      return NextResponse.json({ error: "請先至「我的」完成實名驗證，才能進行收付款" }, { status: 403 });
+    }
 
     const body = await req.json();
-    const toEmail = String(body.toEmail || "")
-      .toLowerCase()
-      .trim();
-    const num =
-      typeof body.amount === "number" ? body.amount : parseFloat(body.amount);
+    const toEmail = String(body.toEmail || "").toLowerCase().trim();
+    const num = typeof body.amount === "number" ? body.amount : parseFloat(body.amount);
     const note = String(body.note || "").slice(0, 200);
 
     if (!toEmail || !toEmail.includes("@")) {
