@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ShieldCheck,
   LogOut,
@@ -109,6 +110,19 @@ export default function ProfilePage() {
           </p>
         )}
       </div>
+
+      <Link
+        href="/mer"
+        className="block bg-white rounded-2xl border border-slate-100 p-5 hover:border-green-200 hover:shadow-sm transition-all"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold text-slate-900 text-sm">商家中心</h2>
+            <p className="text-xs text-slate-500 mt-0.5">收款碼 · API · 對帳</p>
+          </div>
+          <span className="text-green-600 text-sm">開啟 →</span>
+        </div>
+      </Link>
 
       <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3">
         <h2 className="font-semibold text-slate-900 text-sm">安全保障</h2>
