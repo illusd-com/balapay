@@ -5,17 +5,41 @@ let _client: Client | null | undefined;
 export function getTurso(): Client | null {
   if (_client !== undefined) return _client;
 
-  const url = process.env.TURSO_DATABASE_URL;
-  const authToken = process.env.TURSO_AUTH_TOKEN;
+  const url =
+    process.env.TURSO_DATABASE_URL ||
+    process.env.LIBSQL_URL ||
+    process.env.DATABASE_URL ||
+    "";
+  const authToken =
+    process.env.TURSO_AUTH_TOKEN ||
+    process.env.LIBSQL_AUTH_TOKEN ||
+    process.env.DATABASE_AUTH_TOKEN ||
+    "";
 
   if (!url || !authToken) {
-    console.warn("[balapay] Turso credentials missing – offline mode");
+    console.warn(
+      "[balapay] Turso credentials missing. Checked TURSO_DATABASE_URL / LIBSQL_URL / DATABASE_URL"
+    );
     _client = null;
     return null;
   }
 
-  _client = createClient({ url, authToken });
+  try {
+    _client = createClient({ url, authToken });
+    console.log("[balapay] Turso client ready", url.replace(/\/\/.*@/, "//***@"));
+  } catch (e) {
+    console.error("[balapay] Turso createClient failed", e);
+    _client = null;
+  }
   return _client;
+}
+
+export function isTursoConfigured(): boolean {
+  return Boolean(
+    process.env.TURSO_DATABASE_URL ||
+      process.env.LIBSQL_URL ||
+      process.env.DATABASE_URL
+  );
 }
 
 export async function ensureSchema() {
