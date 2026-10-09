@@ -111,10 +111,17 @@ export async function getSession(): Promise<User | null> {
     }
 
     try {
-      const result = await turso.execute({
+      let result = await turso.execute({
         sql: "SELECT id, email, name, balance, is_verified, id_number FROM users WHERE id = ?",
         args: [claims.userId],
       });
+
+      if (result.rows.length === 0 && claims.email) {
+        result = await turso.execute({
+          sql: "SELECT id, email, name, balance, is_verified, id_number FROM users WHERE email = ? OR lower(email) = ?",
+          args: [claims.email.toLowerCase(), claims.email.toLowerCase()],
+        });
+      }
 
       if (result.rows.length > 0) {
         const row = result.rows[0];
@@ -127,21 +134,23 @@ export async function getSession(): Promise<User | null> {
           id_number: (row.id_number as string) || null,
         };
       }
+
+      console.warn("[getSession] ghost JWT, no DB user", claims.userId, claims.email);
+      return null;
     } catch (dbErr) {
       console.error("[getSession] turso", dbErr);
+      if (claims.email) {
+        return {
+          id: claims.userId,
+          email: claims.email,
+          name: claims.name || null,
+          balance: 0,
+          is_verified: Boolean(claims.is_verified),
+          id_number: null,
+        };
+      }
+      return null;
     }
-
-    if (claims.email) {
-      return {
-        id: claims.userId,
-        email: claims.email,
-        name: claims.name || null,
-        balance: 0,
-        is_verified: Boolean(claims.is_verified),
-        id_number: null,
-      };
-    }
-    return null;
   } catch (e) {
     console.error("[getSession]", e);
     return null;
