@@ -12,6 +12,9 @@ export async function POST(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "請先登入" }, { status: 401 });
     }
+    if (!session.is_verified) {
+      return NextResponse.json({ error: "請先至「我的」完成實名驗證，才能進行收付款" }, { status: 403 });
+    }
 
     const body = await req.json();
     let payload;
