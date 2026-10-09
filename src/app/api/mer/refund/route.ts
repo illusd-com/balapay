@@ -13,6 +13,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "無效的 mer-id 或 api_key" }, { status: 401 });
     }
 
+    {
+      const tursoCheck = getTurso();
+      if (tursoCheck) {
+        const v = await tursoCheck.execute({
+          sql: "SELECT is_verified FROM users WHERE id = ?",
+          args: [mer.user_id],
+        });
+        if (!v.rows.length || !Number(v.rows[0].is_verified)) {
+          return NextResponse.json({ error: "商家尚未完成實名驗證，無法收款/退款" }, { status: 403 });
+        }
+      }
+    }
+
     const body = await req.json();
     const payerEmail = String(body.payerEmail || "").toLowerCase().trim();
     const amount = typeof body.amount === "number" ? body.amount : parseFloat(body.amount);

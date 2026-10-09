@@ -13,6 +13,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "無效的 mer-id 或 api_key" }, { status: 401 });
     }
 
+    {
+      const tursoCheck = getTurso();
+      if (tursoCheck) {
+        const v = await tursoCheck.execute({
+          sql: "SELECT is_verified FROM users WHERE id = ?",
+          args: [mer.user_id],
+        });
+        if (!v.rows.length || !Number(v.rows[0].is_verified)) {
+          return NextResponse.json({ error: "商家尚未完成實名驗證，無法收款/退款" }, { status: 403 });
+        }
+      }
+    }
+
     const body = await req.json();
     const payerEmail = String(body.payerEmail || "").toLowerCase().trim();
     const amount = typeof body.amount === "number" ? body.amount : parseFloat(body.amount);
@@ -44,11 +57,14 @@ export async function POST(req: NextRequest) {
     }
 
     const payer = await turso.execute({
-      sql: "SELECT id, email, balance FROM users WHERE email = ?",
+      sql: "SELECT id, email, balance, is_verified FROM users WHERE email = ?",
       args: [payerEmail],
     });
     if (!payer.rows.length) {
       return NextResponse.json({ error: "付款人不存在（需已註冊 BalaPAY）" }, { status: 404 });
+    }
+    if (!Number(payer.rows[0].is_verified)) {
+      return NextResponse.json({ error: "付款人尚未完成實名驗證" }, { status: 403 });
     }
     const payerBal = Number(payer.rows[0].balance) || 0;
     if (payerBal < amount) {
