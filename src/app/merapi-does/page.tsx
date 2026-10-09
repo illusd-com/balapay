@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "BalaPAY 商家 API 使用說明 | merapi-does",
-  description: "如何使用 mer-id 與 api_key 呼叫 BalaPAY 商家收款、退款、產碼 API",
+  description: "如何使用 mer-id 與 api_key 呼叫 BalaPAY 商家收款、退款、產碼、列表與查單 API",
 };
 
 const base = "https://你的網域";
@@ -17,12 +17,8 @@ export default function MerApiDoesPage() {
             拔辣支付 · API
           </Link>
           <div className="flex gap-3 text-sm">
-            <Link href="/mer" className="text-slate-500 hover:text-green-700">
-              商家中心
-            </Link>
-            <Link href="/dashboard" className="text-slate-500 hover:text-green-700">
-              回到 App
-            </Link>
+            <Link href="/mer" className="text-slate-500 hover:text-green-700">商家中心</Link>
+            <Link href="/dashboard" className="text-slate-500 hover:text-green-700">回到 App</Link>
           </div>
         </div>
       </header>
@@ -32,27 +28,16 @@ export default function MerApiDoesPage() {
           <p className="text-xs font-medium text-green-600 tracking-wide uppercase">Documentation</p>
           <h1 className="text-3xl font-bold text-slate-900 mt-1 tracking-tight">商家 API 使用說明</h1>
           <p className="mt-3 text-slate-600 leading-relaxed">
-            先到{" "}
-            <Link href="/mer" className="text-green-700 underline underline-offset-2">/mer</Link>{" "}
-            啟用商家，取得 mer-id 與 api_key，再依本頁呼叫 API。
+            先到 <Link href="/mer" className="text-green-700 underline underline-offset-2">/mer</Link>{" "}
+            啟用商家，取得 mer-id 與 api_key。
           </p>
         </div>
 
-        <Section title="1. 取得憑證">
-          <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600">
-            <li>登入已實名 BalaPAY 帳號</li>
-            <li>開啟 /mer → 填店名 → 啟用商家</li>
-            <li>複製 mer-id 與完整 api_key（僅啟用時顯示一次）</li>
-          </ol>
-          <Callout>api_key 請只放伺服器環境變數，勿寫入前端公開程式。</Callout>
+        <Section title="1. 驗證 Header">
+          <Pre>{`X-Mer-Id: MER_XXXXXXXXXXXX\nX-Api-Key: bp_live_xxxxxxxx`}</Pre>
         </Section>
 
-        <Section title="2. 驗證方式">
-          <p className="text-sm text-slate-600 mb-3">每個需授權請求帶 Header：</p>
-          <Pre>{`X-Mer-Id: MER_XXXXXXXXXXXX\nX-Api-Key: bp_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`}</Pre>
-        </Section>
-
-        <Section title="3. 端點總覽">
+        <Section title="2. 端點總覽">
           <div className="overflow-x-auto rounded-2xl border border-slate-200">
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 text-slate-500">
@@ -63,70 +48,48 @@ export default function MerApiDoesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                <Tr m="POST" p="/api/mer/activate" d="Session 啟用商家" />
-                <Tr m="GET" p="/api/mer/me" d="查商家與餘額" />
-                <Tr m="POST" p="/api/mer/qr" d="產生收款 QR" />
-                <Tr m="POST" p="/api/mer/charge" d="向用戶收款" />
-                <Tr m="POST" p="/api/mer/refund" d="退款給用戶" />
-                <Tr m="GET" p="/api/mer/transactions" d="交易列表" />
+                <Tr m="POST" p="/api/mer/charge" d="收款" />
+                <Tr m="POST" p="/api/mer/refund" d="退款" />
+                <Tr m="POST" p="/api/mer/qr" d="產收款 QR" />
+                <Tr m="GET" p="/api/mer/list/today" d="今日交易 + 收支小計" />
+                <Tr m="GET" p="/api/mer/list/all" d="全部交易（分頁）" />
+                <Tr m="GET" p="/api/mer/check/{id}" d="查單一交易" />
+                <Tr m="GET" p="/api/mer/check?id=" d="查單一交易（query）" />
+                <Tr m="GET" p="/api/mer/me" d="商家資料與餘額" />
               </tbody>
             </table>
           </div>
         </Section>
 
-        <Section title="4. 產生收款碼 POST /api/mer/qr">
-          <Pre>{`curl -X POST ${base}/api/mer/qr \\\n  -H "Content-Type: application/json" \\\n  -H "X-Mer-Id: MER_XXXX" \\\n  -H "X-Api-Key: bp_live_xxxx" \\\n  -d '{"item":"招牌拉麵","amount":120,"qty":1}'`}</Pre>
-          <p className="text-sm text-slate-600 mt-3">
-            回傳 payload 與 qr_image_url。客人用 App「掃碼」付款後入商家餘額。
-          </p>
+        <Section title="3. 今日列表 GET /api/mer/list/today">
+          <Pre>{`curl "${base}/api/mer/list/today" \\\n  -H "X-Mer-Id: MER_XXXX" \\\n  -H "X-Api-Key: bp_live_xxxx"`}</Pre>
+          <p className="text-sm text-slate-600 mt-2">回傳 date、count、total_in、total_out、transactions[]（台北時區今日）。</p>
         </Section>
 
-        <Section title="5. 直接收款 POST /api/mer/charge">
-          <Pre>{`curl -X POST ${base}/api/mer/charge \\\n  -H "Content-Type: application/json" \\\n  -H "X-Mer-Id: MER_XXXX" \\\n  -H "X-Api-Key: bp_live_xxxx" \\\n  -d '{"payerEmail":"customer@example.com","amount":50,"item":"外送費"}'`}</Pre>
+        <Section title="4. 全部列表 GET /api/mer/list/all">
+          <Pre>{`curl "${base}/api/mer/list/all?limit=50&offset=0" \\\n  -H "X-Mer-Id: MER_XXXX" \\\n  -H "X-Api-Key: bp_live_xxxx"`}</Pre>
+          <p className="text-sm text-slate-600 mt-2">回傳 total、count、limit、offset、transactions[]。</p>
         </Section>
 
-        <Section title="6. 退款 POST /api/mer/refund">
-          <Pre>{`curl -X POST ${base}/api/mer/refund \\\n  -H "Content-Type: application/json" \\\n  -H "X-Mer-Id: MER_XXXX" \\\n  -H "X-Api-Key: bp_live_xxxx" \\\n  -d '{"payerEmail":"customer@example.com","amount":50,"note":"取消退款"}'`}</Pre>
-          <Callout>退款從商家餘額扣除；餘額不足會失敗。</Callout>
+        <Section title="5. 查單筆 GET /api/mer/check/{id}">
+          <Pre>{`curl "${base}/api/mer/check/交易ID" \\\n  -H "X-Mer-Id: MER_XXXX" \\\n  -H "X-Api-Key: bp_live_xxxx"\n\n# 或\ncurl "${base}/api/mer/check?id=交易ID" \\\n  -H "X-Mer-Id: MER_XXXX" \\\n  -H "X-Api-Key: bp_live_xxxx"`}</Pre>
+          <p className="text-sm text-slate-600 mt-2">僅能查本商家帳戶的交易；回傳 found 與 transaction（含 direction: in/out）。</p>
         </Section>
 
-        <Section title="7. 查交易 GET /api/mer/transactions">
-          <Pre>{`curl "${base}/api/mer/transactions?limit=20" \\\n  -H "X-Mer-Id: MER_XXXX" \\\n  -H "X-Api-Key: bp_live_xxxx"`}</Pre>
+        <Section title="6. 收款 / 退款（摘要）">
+          <Pre>{`# 收款\ncurl -X POST ${base}/api/mer/charge \\\n  -H "Content-Type: application/json" \\\n  -H "X-Mer-Id: MER_XXXX" -H "X-Api-Key: bp_live_xxxx" \\\n  -d '{"payerEmail":"a@b.com","amount":50,"item":"商品"}'\n\n# 退款\ncurl -X POST ${base}/api/mer/refund \\\n  -H "Content-Type: application/json" \\\n  -H "X-Mer-Id: MER_XXXX" -H "X-Api-Key: bp_live_xxxx" \\\n  -d '{"payerEmail":"a@b.com","amount":50}'`}</Pre>
         </Section>
 
-        <Section title="8. Node.js 範例">
-          <Pre>{`const MER_ID = process.env.BALAPAY_MER_ID;
-const API_KEY = process.env.BALAPAY_API_KEY;
-const BASE = "https://你的網域";
-
-async function charge(payerEmail, amount, item) {
-  const res = await fetch(BASE + "/api/mer/charge", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Mer-Id": MER_ID,
-      "X-Api-Key": API_KEY,
-    },
-    body: JSON.stringify({ payerEmail, amount, item }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error);
-  return data;
-}`}</Pre>
-        </Section>
-
-        <Section title="9. 錯誤碼">
+        <Section title="7. 錯誤碼">
           <ul className="text-sm text-slate-600 space-y-1.5">
-            <li><code className="bg-slate-100 px-1 rounded">401</code> — mer-id / api_key 錯誤</li>
-            <li><code className="bg-slate-100 px-1 rounded">400</code> — 參數錯誤、餘額不足</li>
-            <li><code className="bg-slate-100 px-1 rounded">404</code> — 付款人不存在</li>
+            <li><code className="bg-slate-100 px-1 rounded">401</code> — 憑證錯誤</li>
+            <li><code className="bg-slate-100 px-1 rounded">404</code> — 交易或不存在</li>
+            <li><code className="bg-slate-100 px-1 rounded">400</code> — 參數錯誤</li>
             <li><code className="bg-slate-100 px-1 rounded">503</code> — 資料庫未連線</li>
           </ul>
         </Section>
 
-        <p className="text-center text-xs text-slate-400 pt-6 pb-10">
-          BalaPAY Merchant API · blagov.illusd.com
-        </p>
+        <p className="text-center text-xs text-slate-400 pt-6 pb-10">BalaPAY Merchant API · blagov.illusd.com</p>
       </main>
     </div>
   );
@@ -146,14 +109,6 @@ function Pre({ children }: { children: string }) {
     <pre className="text-[12px] leading-relaxed bg-slate-900 text-slate-100 rounded-2xl p-4 overflow-x-auto whitespace-pre-wrap">
       {children}
     </pre>
-  );
-}
-
-function Callout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mt-3 text-sm text-amber-900 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
-      {children}
-    </div>
   );
 }
 
