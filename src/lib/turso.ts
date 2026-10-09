@@ -2,9 +2,6 @@ import { createClient, type Client } from "@libsql/client";
 
 let _client: Client | null | undefined;
 
-/**
- * Singleton Turso client. Returns null only when env vars are missing.
- */
 export function getTurso(): Client | null {
   if (_client !== undefined) return _client;
 
@@ -12,7 +9,7 @@ export function getTurso(): Client | null {
   const authToken = process.env.TURSO_AUTH_TOKEN;
 
   if (!url || !authToken) {
-    console.warn("[balapay] Turso credentials missing – demo mode");
+    console.warn("[balapay] Turso credentials missing – offline mode");
     _client = null;
     return null;
   }
@@ -49,9 +46,20 @@ export async function ensureSchema() {
         created_at TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (user_id) REFERENCES users(id)
       )`,
+      `CREATE TABLE IF NOT EXISTS merchants (
+        mer_id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL UNIQUE,
+        shop_name TEXT NOT NULL,
+        api_key TEXT NOT NULL UNIQUE,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )`,
       `CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id)`,
       `CREATE INDEX IF NOT EXISTS idx_transactions_created ON transactions(created_at)`,
       `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
+      `CREATE INDEX IF NOT EXISTS idx_merchants_api ON merchants(api_key)`,
+      `CREATE INDEX IF NOT EXISTS idx_merchants_user ON merchants(user_id)`,
     ],
     "write"
   );
