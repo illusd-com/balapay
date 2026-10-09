@@ -156,8 +156,14 @@ export async function registerUser(
 ) {
   const turso = getTurso();
   const emailNorm = email.toLowerCase().trim();
+  const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 
   if (!turso) {
+    if (isProd) {
+      throw new Error(
+        "資料庫未連線，無法註冊。請在 Vercel 設定 TURSO_DATABASE_URL 與 TURSO_AUTH_TOKEN"
+      );
+    }
     const user = demoCreateUser({
       email: emailNorm,
       name,
@@ -175,13 +181,29 @@ export async function registerUser(
       sql: `INSERT INTO users (id, email, password_hash, name, balance, is_verified) VALUES (?, ?, ?, ?, 38, ?)`,
       args: [id, emailNorm, password_hash, name, isVerified ? 1 : 0],
     });
-    return { id, email: emailNorm, name, is_verified: isVerified };
   } catch (e: any) {
-    if (e.message?.includes("UNIQUE")) {
+    const msg = String(e?.message || e);
+    if (/UNIQUE|unique/i.test(msg)) {
       throw new Error("此電子郵件已被註冊");
     }
-    throw e;
+    console.error("[registerUser] insert", e);
+    throw new Error("註冊寫入資料庫失敗：" + msg.slice(0, 120));
   }
+
+  const check = await turso.execute({
+    sql: "SELECT id, email FROM users WHERE id = ? OR email = ?",
+    args: [id, emailNorm],
+  });
+  if (check.rows.length === 0) {
+    throw new Error("註冊未成功寫入資料庫，請重試或檢查 Turso 設定");
+  }
+
+  return {
+    id: (check.rows[0].id as string) || id,
+    email: emailNorm,
+    name,
+    is_verified: isVerified,
+  };
 }
 
 export async function loginUser(email: string, password: string) {
@@ -209,8 +231,8 @@ export async function loginUser(email: string, password: string) {
   let result;
   try {
     result = await turso.execute({
-      sql: "SELECT id, email, name, password_hash, is_verified FROM users WHERE lower(email) = ?",
-      args: [emailNorm],
+      sql: "SELECT id, email, name, password_hash, is_verified FROM users WHERE email = ? OR lower(email) = ?",
+      args: [emailNorm, emailNorm],
     });
   } catch (e: any) {
     console.error("[loginUser] query", e);
@@ -218,7 +240,7 @@ export async function loginUser(email: string, password: string) {
   }
 
   if (result.rows.length === 0) {
-    throw new Error("此電子郵件尚未註冊");
+    throw new Error("此電子郵件尚未註冊（若剛註冊過，可能當時未寫入資料庫，請重新註冊）");
   }
 
   const row = result.rows[0];
