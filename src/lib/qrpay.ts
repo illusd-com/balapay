@@ -37,7 +37,13 @@ export function parseQrPay(raw: string): { ok: true; data: QrPayPayload } | { ok
     if (idx === -1) continue;
     const key = pair.slice(0, idx).trim().toLowerCase();
     const val = pair.slice(idx + 1).trim();
-    if (key) map[key] = val;
+    if (key) {
+      try {
+        map[key] = decodeURIComponent(val);
+      } catch {
+        map[key] = val;
+      }
+    }
   }
 
   const paywho = (map.paywho || "").toLowerCase().trim();

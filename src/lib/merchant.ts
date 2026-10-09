@@ -146,12 +146,13 @@ export function buildQrPayload(opts: {
   unitPrice: number;
   shopName: string;
 }) {
+  const enc = (v: string | number) => encodeURIComponent(String(v ?? "").trim());
   return [
-    `paywho=${opts.email}`,
-    `payhow=${opts.amount}`,
-    `itemhowmany=${opts.qty}`,
-    `itemhowmuch1=${opts.unitPrice}`,
-    `itemwhat=${opts.item}`,
-    `mername=${opts.shopName}`,
+    `paywho=${enc(opts.email)}`,
+    `payhow=${enc(opts.amount)}`,
+    `itemhowmany=${enc(opts.qty)}`,
+    `itemhowmuch1=${enc(opts.unitPrice)}`,
+    `itemwhat=${enc(opts.item)}`,
+    `mername=${enc(opts.shopName)}`,
   ].join("&");
 }
