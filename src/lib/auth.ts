@@ -47,12 +47,13 @@ export async function verifyPassword(password: string, hash: string) {
 
 export async function createToken(
   userId: string,
-  extra?: { email?: string; name?: string | null }
+  extra?: { email?: string; name?: string | null; is_verified?: boolean }
 ) {
   return new SignJWT({
     sub: userId,
     email: extra?.email || "",
     name: extra?.name || "",
+    verified: extra?.is_verified ? 1 : 0,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -67,6 +68,7 @@ export async function verifyToken(token: string) {
       userId: payload.sub as string,
       email: (payload.email as string) || "",
       name: (payload.name as string) || "",
+      is_verified: Number(payload.verified) === 1,
     };
   } catch {
     return null;
@@ -101,7 +103,7 @@ export async function getSession(): Promise<User | null> {
           email: claims.email,
           name: claims.name || null,
           balance: 0,
-          is_verified: false,
+          is_verified: Boolean(claims.is_verified),
           id_number: null,
         };
       }
@@ -121,7 +123,7 @@ export async function getSession(): Promise<User | null> {
           email: row.email as string,
           name: (row.name as string) || null,
           balance: Number(row.balance) || 0,
-          is_verified: Boolean(row.is_verified),
+          is_verified: Number(row.is_verified) === 1,
           id_number: (row.id_number as string) || null,
         };
       }
@@ -135,7 +137,7 @@ export async function getSession(): Promise<User | null> {
         email: claims.email,
         name: claims.name || null,
         balance: 0,
-        is_verified: false,
+        is_verified: Boolean(claims.is_verified),
         id_number: null,
       };
     }
@@ -194,7 +196,12 @@ export async function loginUser(email: string, password: string) {
   if (!turso) {
     const local = demoGetUserByEmail(emailNorm);
     if (local && local.password === passwordNorm) {
-      return { id: local.id, email: local.email, name: local.name };
+      return {
+        id: local.id,
+        email: local.email,
+        name: local.name,
+        is_verified: local.is_verified,
+      };
     }
     throw new Error("帳號或密碼錯誤（資料庫未連線，僅能驗證本機帳戶）");
   }
@@ -202,7 +209,7 @@ export async function loginUser(email: string, password: string) {
   let result;
   try {
     result = await turso.execute({
-      sql: "SELECT id, email, name, password_hash FROM users WHERE lower(email) = ?",
+      sql: "SELECT id, email, name, password_hash, is_verified FROM users WHERE lower(email) = ?",
       args: [emailNorm],
     });
   } catch (e: any) {
@@ -236,6 +243,7 @@ export async function loginUser(email: string, password: string) {
     id: row.id as string,
     email: row.email as string,
     name: (row.name as string) || null,
+    is_verified: Number(row.is_verified) === 1,
   };
 }
 
