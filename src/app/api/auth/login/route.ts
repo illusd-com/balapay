@@ -17,16 +17,22 @@ export async function POST(req: NextRequest) {
     const token = await createToken(user.id, {
       email: user.email,
       name: user.name,
+      is_verified: Boolean((user as any).is_verified),
     });
     const res = NextResponse.json({
       success: true,
-      user: { id: user.id, email: user.email, name: user.name },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        is_verified: Boolean((user as any).is_verified),
+      },
     });
     return attachSessionCookie(res, token);
   } catch (e: any) {
     console.error("[login]", e?.message || e);
     const msg = e?.message || "登入失敗";
     const status = msg.includes("資料庫") ? 503 : 401;
-    return NextResponse.json({ error: msg }, { status });
+    return NextResponse.json({ error: msg }, { status: status });
   }
 }
