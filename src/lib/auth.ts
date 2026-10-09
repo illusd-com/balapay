@@ -15,7 +15,7 @@ const JWT_SECRET = new TextEncoder().encode(
 );
 
 const COOKIE_NAME = "balapay_session";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
 export interface User {
   id: string;
@@ -153,10 +153,11 @@ export async function registerUser(
   isVerified = false
 ) {
   const turso = getTurso();
+  const emailNorm = email.toLowerCase().trim();
 
   if (!turso) {
     const user = demoCreateUser({
-      email,
+      email: emailNorm,
       name,
       password,
       is_verified: isVerified,
@@ -170,9 +171,9 @@ export async function registerUser(
   try {
     await turso.execute({
       sql: `INSERT INTO users (id, email, password_hash, name, balance, is_verified) VALUES (?, ?, ?, ?, 38, ?)`,
-      args: [id, email.toLowerCase(), password_hash, name, isVerified ? 1 : 0],
+      args: [id, emailNorm, password_hash, name, isVerified ? 1 : 0],
     });
-    return { id, email, name, is_verified: isVerified };
+    return { id, email: emailNorm, name, is_verified: isVerified };
   } catch (e: any) {
     if (e.message?.includes("UNIQUE")) {
       throw new Error("此電子郵件已被註冊");
@@ -182,29 +183,53 @@ export async function registerUser(
 }
 
 export async function loginUser(email: string, password: string) {
+  const emailNorm = String(email || "").trim().toLowerCase();
+  const passwordNorm = String(password || "");
+  if (!emailNorm || !passwordNorm) {
+    throw new Error("請輸入電子郵件與密碼");
+  }
+
   const turso = getTurso();
 
   if (!turso) {
-    const local = demoGetUserByEmail(email);
-    if (local && local.password === password) {
+    const local = demoGetUserByEmail(emailNorm);
+    if (local && local.password === passwordNorm) {
       return { id: local.id, email: local.email, name: local.name };
     }
-    throw new Error("帳號或密碼錯誤");
+    throw new Error("帳號或密碼錯誤（資料庫未連線，僅能驗證本機帳戶）");
   }
 
-  const result = await turso.execute({
-    sql: "SELECT id, email, name, password_hash FROM users WHERE email = ?",
-    args: [email.toLowerCase()],
-  });
+  let result;
+  try {
+    result = await turso.execute({
+      sql: "SELECT id, email, name, password_hash FROM users WHERE lower(email) = ?",
+      args: [emailNorm],
+    });
+  } catch (e: any) {
+    console.error("[loginUser] query", e);
+    throw new Error("無法連線資料庫，請稍後再試");
+  }
 
   if (result.rows.length === 0) {
-    throw new Error("帳號或密碼錯誤");
+    throw new Error("此電子郵件尚未註冊");
   }
 
   const row = result.rows[0];
-  const valid = await verifyPassword(password, row.password_hash as string);
+  const hash = row.password_hash as string;
+  if (!hash) {
+    throw new Error("此帳戶密碼資料異常，請重新註冊或聯絡支援");
+  }
+
+  let valid = false;
+  try {
+    valid = await verifyPassword(passwordNorm, hash);
+  } catch (e) {
+    console.error("[loginUser] bcrypt", e);
+    throw new Error("密碼驗證失敗，請稍後再試");
+  }
+
   if (!valid) {
-    throw new Error("帳號或密碼錯誤");
+    throw new Error("密碼錯誤");
   }
 
   return {
