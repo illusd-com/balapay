@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Home, ArrowLeftRight, Clock, User, ScanLine } from "lucide-react";
+import { Home, ArrowLeftRight, Clock, User, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/dashboard", icon: Home, label: "首頁" },
   { href: "/transfer", icon: ArrowLeftRight, label: "轉帳" },
-  { href: "/scan", icon: ScanLine, label: "掃碼" },
+  { href: "/manage-card", icon: CreditCard, label: "電子卡" },
   { href: "/history", icon: Clock, label: "紀錄" },
   { href: "/profile", icon: User, label: "我的" },
 ];
@@ -21,7 +21,7 @@ export function AppNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-slate-100 safe-area-pb">
       <div className="max-w-lg mx-auto flex items-center justify-around h-16 px-1">
         {items.map((item) => {
-          const active = pathname === item.href;
+          const active = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
