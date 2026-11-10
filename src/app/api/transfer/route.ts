@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { notifyUser } from "@/lib/push";
 import { getTurso, ensureSchema } from "@/lib/turso";
 import { demoTransfer } from "@/lib/store";
 import { v4 as uuidv4 } from "uuid";
@@ -102,6 +103,23 @@ export async function POST(req: NextRequest) {
     }
 
     await turso.batch(statements, "write");
+
+    try {
+      await notifyUser(session.id, {
+        title: "轉帳成功",
+        body: `已轉出 ${num} BLA 給 ${toEmail}`,
+        url: "/history",
+      });
+      if (recipientId) {
+        await notifyUser(recipientId, {
+          title: "收到款項",
+          body: `收到 ${num} BLA（來自 ${session.email}）`,
+          url: "/history",
+        });
+      }
+    } catch (pe) {
+      console.error("[transfer] push", pe);
+    }
 
     return NextResponse.json({
       success: true,
