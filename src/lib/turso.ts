@@ -93,11 +93,31 @@ const DDL = [
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   )`,
+  `CREATE TABLE IF NOT EXISTS nfc_cards (
+    card_id TEXT PRIMARY KEY,
+    belong_email TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    status TEXT DEFAULT 'active',
+    label TEXT,
+    issued_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`,
   `CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id)`,
   `CREATE INDEX IF NOT EXISTS idx_transactions_created ON transactions(created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
   `CREATE INDEX IF NOT EXISTS idx_merchants_api ON merchants(api_key)`,
   `CREATE INDEX IF NOT EXISTS idx_merchants_user ON merchants(user_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_nfc_belong ON nfc_cards(belong_email)`,
+  `CREATE INDEX IF NOT EXISTS idx_nfc_user ON nfc_cards(user_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id)`,
 ];
 
 export async function ensureSchema() {
